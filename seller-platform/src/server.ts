@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import './db/seed'; // Initialize in-memory database with sample data
 import discoveryRouter from './routes/discovery';
 import checkoutRouter from './routes/checkout';
 import productsRouter from './routes/products';

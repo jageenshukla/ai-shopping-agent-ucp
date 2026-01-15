@@ -1,6 +1,7 @@
-import db from './init';
+import { store } from './store';
+import { Product } from '../types';
 
-const products = [
+const sampleProducts: Product[] = [
   {
     sku: 'COFFEE-001',
     name: 'Premium Coffee Maker',
@@ -53,45 +54,18 @@ const products = [
   }
 ];
 
-console.log('Seeding database with sample products...');
+export function seedDatabase() {
+  console.log('Seeding in-memory database with sample products...');
 
-const insertProduct = db.prepare(`
-  INSERT OR REPLACE INTO products (
-    sku, name, description, price, currency,
-    image_url, inventory_count, is_active
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-db.serialize(() => {
-  products.forEach((product) => {
-    insertProduct.run(
-      product.sku,
-      product.name,
-      product.description,
-      product.price,
-      product.currency,
-      product.image_url,
-      product.inventory_count,
-      product.is_active,
-      (err: Error | null) => {
-        if (err) {
-          console.error(`Error inserting ${product.sku}:`, err);
-        } else {
-          console.log(`✓ Inserted ${product.sku}: ${product.name}`);
-        }
-      }
-    );
+  sampleProducts.forEach((product) => {
+    store.addProduct(product);
+    console.log(`✓ Added ${product.sku}: ${product.name}`);
   });
 
-  insertProduct.finalize(() => {
-    console.log('\nDatabase seeding completed!');
-    console.log(`Total products: ${products.length}`);
+  console.log('\nDatabase seeding completed!');
+  console.log(`Total products: ${sampleProducts.length}`);
+  console.log(`Products in store: ${store.getStats().products}`);
+}
 
-    db.get('SELECT COUNT(*) as count FROM products', (err, row: any) => {
-      if (!err) {
-        console.log(`Products in database: ${row.count}`);
-      }
-      db.close();
-    });
-  });
-});
+// Seed immediately when imported
+seedDatabase();

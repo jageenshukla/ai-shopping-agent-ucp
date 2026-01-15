@@ -1,5 +1,5 @@
-import db from '../db/init';
-import { AP2Mandate } from '../types';
+import { store } from '../db/store';
+import { AP2Mandate, CheckoutSession } from '../types';
 
 interface ValidationResult {
   valid: boolean;
@@ -8,7 +8,7 @@ interface ValidationResult {
 
 export async function validateAP2Mandate(
   mandate: AP2Mandate,
-  session: any
+  session: CheckoutSession
 ): Promise<ValidationResult> {
   if (!mandate) {
     return { valid: false, error: 'AP2 mandate is required' };
@@ -26,7 +26,7 @@ export async function validateAP2Mandate(
     return { valid: false, error: 'Mandate session ID does not match' };
   }
 
-  if (Math.abs(mandate.amount - session.total_amount) > 0.01) {
+  if (Math.abs(mandate.amount - (session.total_amount || 0)) > 0.01) {
     return { valid: false, error: 'Mandate amount does not match session total' };
   }
 
@@ -46,31 +46,11 @@ export async function validateAP2Mandate(
     return { valid: false, error: 'Invalid mandate nonce' };
   }
 
-  const nonceUsed = await new Promise<boolean>((resolve, reject) => {
-    db.get(
-      'SELECT nonce FROM used_nonces WHERE nonce = ?',
-      [mandate.nonce],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(!!row);
-      }
-    );
-  });
-
-  if (nonceUsed) {
+  if (store.hasNonce(mandate.nonce)) {
     return { valid: false, error: 'Mandate nonce has already been used (replay attack)' };
   }
 
-  await new Promise<void>((resolve, reject) => {
-    db.run(
-      'INSERT INTO used_nonces (nonce) VALUES (?)',
-      [mandate.nonce],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
-  });
+  store.addNonce(mandate.nonce);
 
   console.log('AP2 mandate validation passed (mock signature validation)');
 

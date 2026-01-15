@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db/init';
-import { CartItem, CheckoutSession, Product, BuyerInfo, ShippingAddress, Order } from '../types';
+import { store } from '../db/store';
+import { CartItem, CheckoutSession, Order } from '../types';
 import { validateAP2Mandate } from '../services/ap2';
 import { createPaymentIntent } from '../services/stripe';
 
@@ -22,17 +22,11 @@ router.post('/checkout-sessions', async (req: Request, res: Response) => {
     let subtotal = 0;
 
     for (const item of items) {
-      const product = await new Promise<Product>((resolve, reject) => {
-        db.get<Product>(
-          'SELECT * FROM products WHERE sku = ? AND is_active = 1',
-          [item.sku],
-          (err, row) => {
-            if (err) reject(err);
-            else if (!row) reject(new Error(`Product ${item.sku} not found`));
-            else resolve(row);
-          }
-        );
-      });
+      const product = store.getProduct(item.sku);
+
+      if (!product) {
+        return res.status(404).json({ error: `Product ${item.sku} not found` });
+      }
 
       enrichedItems.push({
         sku: product.sku,
@@ -48,29 +42,21 @@ router.post('/checkout-sessions', async (req: Request, res: Response) => {
     const total = subtotal + tax;
     const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
 
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        `INSERT INTO checkout_sessions (
-          id, status, items, total_amount, subtotal, tax, currency,
-          continue_url, expires_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          sessionId,
-          'incomplete',
-          JSON.stringify(enrichedItems),
-          total,
-          subtotal,
-          tax,
-          'USD',
-          continue_url || null,
-          expiresAt
-        ],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    const session: CheckoutSession = {
+      id: sessionId,
+      status: 'incomplete',
+      items: enrichedItems,
+      total_amount: total,
+      subtotal,
+      tax,
+      currency: 'USD',
+      continue_url: continue_url || undefined,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      expires_at: expiresAt
+    };
+
+    store.createSession(session);
 
     res.status(201).json({
       id: sessionId,
@@ -89,20 +75,10 @@ router.post('/checkout-sessions', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/checkout-sessions/:id', async (req: Request, res: Response) => {
+router.get('/checkout-sessions/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    const session = await new Promise<any>((resolve, reject) => {
-      db.get(
-        'SELECT * FROM checkout_sessions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const session = store.getSession(id);
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
@@ -111,9 +87,9 @@ router.get('/checkout-sessions/:id', async (req: Request, res: Response) => {
     res.json({
       id: session.id,
       status: session.status,
-      items: JSON.parse(session.items),
-      buyer_info: session.buyer_info ? JSON.parse(session.buyer_info) : undefined,
-      shipping_address: session.shipping_address ? JSON.parse(session.shipping_address) : undefined,
+      items: session.items,
+      buyer_info: session.buyer_info,
+      shipping_address: session.shipping_address,
       subtotal: session.subtotal,
       tax: session.tax,
       total_amount: session.total_amount,
@@ -129,21 +105,12 @@ router.get('/checkout-sessions/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.put('/checkout-sessions/:id', async (req: Request, res: Response) => {
+router.put('/checkout-sessions/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { buyer_info, shipping_address } = req.body;
 
-    const session = await new Promise<any>((resolve, reject) => {
-      db.get(
-        'SELECT * FROM checkout_sessions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const session = store.getSession(id);
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
@@ -153,21 +120,9 @@ router.put('/checkout-sessions/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cannot update completed or canceled session' });
     }
 
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        `UPDATE checkout_sessions
-         SET buyer_info = ?, shipping_address = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-        [
-          buyer_info ? JSON.stringify(buyer_info) : null,
-          shipping_address ? JSON.stringify(shipping_address) : null,
-          id
-        ],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
+    store.updateSession(id, {
+      buyer_info,
+      shipping_address
     });
 
     res.json({
@@ -181,35 +136,16 @@ router.put('/checkout-sessions/:id', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/checkout-sessions/:id/cancel', async (req: Request, res: Response) => {
+router.post('/checkout-sessions/:id/cancel', (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    const session = await new Promise<any>((resolve, reject) => {
-      db.get(
-        'SELECT * FROM checkout_sessions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const session = store.getSession(id);
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        'UPDATE checkout_sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['canceled', id],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    store.updateSession(id, { status: 'canceled' });
 
     res.json({
       id,
@@ -227,16 +163,7 @@ router.post('/checkout-sessions/:id/complete', async (req: Request, res: Respons
     const { id } = req.params;
     const { ap2_mandate, payment_credential } = req.body;
 
-    const session = await new Promise<any>((resolve, reject) => {
-      db.get(
-        'SELECT * FROM checkout_sessions WHERE id = ?',
-        [id],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const session = store.getSession(id);
 
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
@@ -252,59 +179,37 @@ router.post('/checkout-sessions/:id/complete', async (req: Request, res: Respons
     }
 
     const paymentIntentId = await createPaymentIntent(
-      session.total_amount,
+      session.total_amount!,
       session.currency,
       payment_credential
     );
 
     const orderId = uuidv4();
-    const buyerInfo = session.buyer_info ? JSON.parse(session.buyer_info) : {};
-    const shippingAddress = session.shipping_address ? JSON.parse(session.shipping_address) : null;
+    const buyerInfo = session.buyer_info || {};
+    const shippingAddress = session.shipping_address;
 
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        `INSERT INTO orders (
-          id, checkout_session_id, customer_email, customer_name,
-          items, total_amount, currency, payment_status,
-          fulfillment_status, stripe_payment_intent_id, shipping_address
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          orderId,
-          id,
-          buyerInfo.email || 'unknown@example.com',
-          buyerInfo.name || null,
-          session.items,
-          session.total_amount,
-          session.currency,
-          'succeeded',
-          'pending',
-          paymentIntentId,
-          shippingAddress ? JSON.stringify(shippingAddress) : null
-        ],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    const order: Order = {
+      id: orderId,
+      checkout_session_id: id,
+      customer_email: buyerInfo.email || 'unknown@example.com',
+      customer_name: buyerInfo.name,
+      items: session.items,
+      total_amount: session.total_amount!,
+      currency: session.currency,
+      payment_status: 'succeeded',
+      fulfillment_status: 'pending',
+      stripe_payment_intent_id: paymentIntentId,
+      shipping_address: shippingAddress,
+      created_at: new Date().toISOString()
+    };
 
-    await new Promise<void>((resolve, reject) => {
-      db.run(
-        `UPDATE checkout_sessions
-         SET status = ?, ap2_mandate = ?, payment_credential = ?, nonce = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-        [
-          'complete',
-          JSON.stringify(ap2_mandate),
-          JSON.stringify(payment_credential),
-          ap2_mandate.nonce,
-          id
-        ],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
+    store.createOrder(order);
+
+    store.updateSession(id, {
+      status: 'complete',
+      ap2_mandate,
+      payment_credential,
+      nonce: ap2_mandate.nonce
     });
 
     res.json({

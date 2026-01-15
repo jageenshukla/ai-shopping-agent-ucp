@@ -9,12 +9,12 @@ A UCP-compliant REST API for e-commerce merchants to sell products using the Uni
 - **Checkout Sessions**: Create, update, and complete checkout sessions
 - **AP2 Authorization**: Basic AP2 mandate validation with replay protection
 - **Stripe Integration**: Payment processing with Stripe (test mode)
-- **SQLite Database**: Lightweight database for products, sessions, and orders
+- **In-Memory Storage**: Zero-dependency data storage (resets on restart - perfect for POC)
 
 ## Prerequisites
 
 - Node.js 18+ and npm
-- Stripe account (test mode is fine)
+- Stripe account (optional - uses mock payment if not configured)
 
 ## Setup
 
@@ -23,23 +23,18 @@ A UCP-compliant REST API for e-commerce merchants to sell products using the Uni
    npm install
    ```
 
-2. **Configure environment**:
+2. **Configure environment** (optional):
    ```bash
    cp .env.example .env
-   # Edit .env and add your Stripe test keys
+   # Edit .env and add your Stripe test keys (optional)
    ```
 
-3. **Initialize and seed database**:
-   ```bash
-   npm run db:seed
-   ```
-
-4. **Start development server**:
+3. **Start development server**:
    ```bash
    npm run dev
    ```
 
-The server will start at `http://localhost:3000`
+The server will start at `http://localhost:3000` with 5 sample products pre-loaded in memory.
 
 ## API Endpoints
 
@@ -141,22 +136,22 @@ This will test all endpoints and verify the complete checkout flow.
 
 ## Development Scripts
 
-- `npm run dev` - Start development server with auto-reload
+- `npm run dev` - Start development server with auto-reload (data auto-seeded)
 - `npm run build` - Build TypeScript to JavaScript
 - `npm start` - Run production build
-- `npm run db:init` - Initialize database schema
-- `npm run db:seed` - Seed database with sample products
 - `npm test` - Run E2E tests
 
 ## Sample Products
 
-The database is seeded with 5 sample products:
+In-memory storage is pre-loaded with 5 sample products on server startup:
 
 1. **COFFEE-001** - Premium Coffee Maker ($89.99)
 2. **MUG-001** - Ceramic Coffee Mug Set ($34.99)
 3. **BEANS-001** - Organic Coffee Beans ($24.99)
 4. **GRINDER-001** - Burr Coffee Grinder ($149.99)
 5. **KETTLE-001** - Gooseneck Electric Kettle ($79.99)
+
+**Note**: Data resets on server restart - perfect for testing and demos!
 
 ## Architecture
 
@@ -171,15 +166,13 @@ seller-platform/
 │   │   ├── ap2.ts          # AP2 mandate validation
 │   │   └── stripe.ts       # Stripe payment integration
 │   ├── db/
-│   │   ├── init.ts         # Database schema and connection
+│   │   ├── store.ts        # In-memory data store
 │   │   └── seed.ts         # Sample data seeding
 │   ├── types/
 │   │   └── index.ts        # TypeScript interfaces
 │   └── server.ts           # Express app entry point
-├── tests/
-│   └── e2e-test.sh         # End-to-end test script
-└── data/
-    └── seller.db           # SQLite database (auto-created)
+└── tests/
+    └── e2e-test.sh         # End-to-end test script
 ```
 
 ## UCP Compliance

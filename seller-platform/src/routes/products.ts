@@ -1,21 +1,11 @@
 import { Router, Request, Response } from 'express';
-import db from '../db/init';
-import { Product } from '../types';
+import { store } from '../db/store';
 
 const router = Router();
 
-router.get('/products', async (req: Request, res: Response) => {
+router.get('/products', (req: Request, res: Response) => {
   try {
-    const products = await new Promise<Product[]>((resolve, reject) => {
-      db.all<Product>(
-        'SELECT * FROM products WHERE is_active = 1 ORDER BY created_at DESC',
-        [],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows || []);
-        }
-      );
-    });
+    const products = store.getAllProducts();
 
     res.json({
       products,
@@ -27,22 +17,12 @@ router.get('/products', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/products/:sku', async (req: Request, res: Response) => {
+router.get('/products/:sku', (req: Request, res: Response) => {
   try {
     const { sku } = req.params;
+    const product = store.getProduct(sku);
 
-    const product = await new Promise<Product>((resolve, reject) => {
-      db.get<Product>(
-        'SELECT * FROM products WHERE sku = ? AND is_active = 1',
-        [sku],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
-
-    if (!product) {
+    if (!product || product.is_active !== 1) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
