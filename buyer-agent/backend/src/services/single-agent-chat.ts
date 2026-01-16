@@ -34,19 +34,16 @@ YOUR ROLE:
 - Help order groceries from FreshMart Groceries on behalf of the household
 - Be friendly, proactive, and efficient
 
-INITIAL GREETING (when chat opens):
-"Good morning! I've checked our grocery inventory and noticed we're running low on a few items:
-- Whole Milk (only 2 left)
-- Coffee Beans (only 1 left)
-- Red Wine (only 3 bottles)
-- Bread (only 4 loaves)
-- Cheddar Cheese (only 2 packs)
-
-Would you like me to order these items from FreshMart Groceries?"
+LOW-STOCK ITEMS (with SKUs):
+- Whole Milk (only 2 left) → SKU: milk_whole_1gal
+- Coffee Beans (only 1 left) → SKU: coffee_beans_1lb
+- Red Wine (only 3 bottles) → SKU: wine_red_cab
+- Bread (only 4 loaves) → SKU: bread_wheat
+- Cheddar Cheese (only 2 packs) → SKU: cheese_cheddar
 
 WORKFLOW:
 1. Start conversations by listing low-stock items proactively
-2. When user agrees to order → use create_checkout with pre-filled buyer info
+2. When user agrees to order → use create_checkout with the exact SKUs above
 3. After checkout created → ask user to confirm the order
 4. When user confirms → use complete_purchase
 
@@ -56,9 +53,9 @@ BUYER INFORMATION (pre-configured):
 
 IMPORTANT:
 - NEVER ask for email or name - you already have it
+- When creating checkouts, ALWAYS use the exact SKUs listed above (e.g., milk_whole_1gal, not MILK-WHOLE)
 - Keep responses SHORT and friendly (1-2 sentences)
-- Be proactive about suggesting replenishment
-- Track what the user wants to buy and guide them efficiently`;
+- Be proactive about suggesting replenishment`;
 
 // UCP Tools for Qwen2.5
 const UCP_TOOLS: Tool[] = [
@@ -99,12 +96,15 @@ const UCP_TOOLS: Tool[] = [
       parameters: {
         type: 'object',
         properties: {
-          sku: {
-            type: 'string',
-            description: 'Product SKU to purchase',
+          skus: {
+            type: 'array',
+            items: {
+              type: 'string',
+            },
+            description: 'Array of product SKUs to purchase',
           },
         },
-        required: ['sku'],
+        required: ['skus'],
       },
     },
   },
@@ -153,7 +153,7 @@ export class SingleAgentChatService {
     // Send proactive greeting with low-stock items
     this.sendMessage(ws, {
       type: 'agent',
-      content: `Good morning! 🏠 I'm HomeMaker AI, your household grocery assistant.\n\nI've checked our inventory at FreshMart Groceries and noticed we're running low on:\n\n• Whole Milk (only 2 left)\n• Coffee Beans (only 1 left)\n• Red Wine (only 3 bottles)\n• Bread (only 4 loaves)\n• Cheddar Cheese (only 2 packs)\n\nWould you like me to order these items for you?`,
+      content: `Good morning! 🏠 I'm HomeMaker AI, your household grocery assistant.\n\nI've checked our inventory at FreshMart Groceries and noticed we're running low on:\n\n• Whole Milk (only 2 left) - SKU: milk_whole_1gal\n• Coffee Beans (only 1 left) - SKU: coffee_beans_1lb\n• Red Wine (only 3 bottles) - SKU: wine_red_cab\n• Bread (only 4 loaves) - SKU: bread_wheat\n• Cheddar Cheese (only 2 packs) - SKU: cheese_cheddar\n\nWould you like me to order these items for you?`,
     });
 
     ws.on('message', async (data: Buffer) => {
@@ -296,7 +296,7 @@ export class SingleAgentChatService {
           return await this.toolSearchProducts(session, args.query);
 
         case 'create_checkout':
-          return await this.toolCreateCheckout(session, args.sku);
+          return await this.toolCreateCheckout(session, args.skus);
 
         case 'complete_purchase':
           return await this.toolCompletePurchase(session);
@@ -360,7 +360,7 @@ export class SingleAgentChatService {
 
   private async toolCreateCheckout(
     session: ChatSession,
-    sku: string
+    skus: string[]
   ): Promise<any> {
     if (!session.checkoutClient) {
       await discoverMerchant(session.merchantUrl);
@@ -375,7 +375,8 @@ export class SingleAgentChatService {
       email: 'john.smith@email.com',
       name: 'John Smith'
     };
-    session.selectedProducts = [{ sku, quantity: 1 }];
+    // Map each SKU to a line item with quantity 1
+    session.selectedProducts = skus.map(sku => ({ sku, quantity: 1 }));
 
     const checkoutSession = await session.checkoutClient!.createSession(session.selectedProducts);
     await session.checkoutClient!.updateSession(checkoutSession.id, session.buyerInfo);
