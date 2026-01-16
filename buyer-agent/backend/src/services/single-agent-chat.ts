@@ -27,35 +27,32 @@ interface ChatSession {
   discoveredProducts?: Product[];
 }
 
-const SYSTEM_PROMPT = `You are HomeMaker AI, a proactive home grocery management assistant for the household. You already know your household member (John Smith, john.smith@email.com) and their preferences.
+const SYSTEM_PROMPT = `You are HomeMaker AI, a proactive home assistant that helps manage household tasks and chores. You assist with grocery management, household inventory tracking, and ordering supplies on behalf of the household. You already know your household member (Alice, alice@email.com) and their preferences.
 
 YOUR ROLE:
-- Monitor household grocery inventory and suggest items running low
-- Help order groceries from FreshMart Groceries on behalf of the household
-- Be friendly, proactive, and efficient
-
-LOW-STOCK ITEMS (with SKUs):
-- Whole Milk (only 2 left) → SKU: milk_whole_1gal
-- Coffee Beans (only 1 left) → SKU: coffee_beans_1lb
-- Red Wine (only 3 bottles) → SKU: wine_red_cab
-- Bread (only 4 loaves) → SKU: bread_wheat
-- Cheddar Cheese (only 2 packs) → SKU: cheese_cheddar
+- Act as a home assistant managing household chores and tasks
+- Help discover and order groceries from FreshMart Groceries on behalf of the household
+- Be friendly, proactive, and efficient in managing home needs
 
 WORKFLOW:
-1. Start conversations by listing low-stock items proactively
-2. When user agrees to order → use create_checkout with the exact SKUs above
-3. After checkout created → ask user to confirm the order
-4. When user confirms → use complete_purchase
+1. When user wants to see products → use list_products tool to get all available items with their SKUs
+2. When user wants to search for specific items → use search_products tool with the PRODUCT NAME (not SKU)
+3. When user wants to order a product you already listed → directly use create_checkout with the SKU(s) you remember
+4. After checkout created → ask user to confirm the order
+5. When user confirms → use complete_purchase
 
 BUYER INFORMATION (pre-configured):
-- Name: John Smith
-- Email: john.smith@email.com
+- Name: Alice
+- Email: alice@email.com
 
 IMPORTANT:
 - NEVER ask for email or name - you already have it
-- When creating checkouts, ALWAYS use the exact SKUs listed above (e.g., milk_whole_1gal, not MILK-WHOLE)
+- When searching, use product NAMES (e.g., "yogurt", "milk") not SKUs
+- REMEMBER product SKUs from list_products results - use them directly for create_checkout
+- If user mentions a product you just showed them, use the SKU from memory instead of searching again
+- Use the exact SKU values returned from the product list (e.g., milk_whole_1gal, yogurt_greek_32oz)
 - Keep responses SHORT and friendly (1-2 sentences)
-- Be proactive about suggesting replenishment`;
+- Be proactive in helping with household grocery needs`;
 
 // UCP Tools for Qwen2.5
 const UCP_TOOLS: Tool[] = [
@@ -92,7 +89,7 @@ const UCP_TOOLS: Tool[] = [
     type: 'function',
     function: {
       name: 'create_checkout',
-      description: 'Create a checkout session for the household. Buyer info (John Smith, john.smith@email.com) is pre-configured.',
+      description: 'Create a checkout session for the household. Buyer info (Alice, alice@email.com) is pre-configured.',
       parameters: {
         type: 'object',
         properties: {
@@ -150,10 +147,10 @@ export class SingleAgentChatService {
 
     this.sessions.set(ws, session);
 
-    // Send proactive greeting with low-stock items
+    // Send greeting
     this.sendMessage(ws, {
       type: 'agent',
-      content: `Good morning! 🏠 I'm HomeMaker AI, your household grocery assistant.\n\nI've checked our inventory at FreshMart Groceries and noticed we're running low on:\n\n• Whole Milk (only 2 left) - SKU: milk_whole_1gal\n• Coffee Beans (only 1 left) - SKU: coffee_beans_1lb\n• Red Wine (only 3 bottles) - SKU: wine_red_cab\n• Bread (only 4 loaves) - SKU: bread_wheat\n• Cheddar Cheese (only 2 packs) - SKU: cheese_cheddar\n\nWould you like me to order these items for you?`,
+      content: `Good morning! 🏠 I'm HomeMaker AI, your home assistant for managing household chores and groceries.\n\nI can help you:\n• Browse available groceries from FreshMart\n• Search for specific items\n• Place orders on your behalf\n\nHow can I assist you today?`,
     });
 
     ws.on('message', async (data: Buffer) => {
@@ -372,8 +369,8 @@ export class SingleAgentChatService {
 
     // Use pre-configured household buyer info
     session.buyerInfo = {
-      email: 'john.smith@email.com',
-      name: 'John Smith'
+      email: 'alice@email.com',
+      name: 'Alice'
     };
     // Map each SKU to a line item with quantity 1
     session.selectedProducts = skus.map(sku => ({ sku, quantity: 1 }));

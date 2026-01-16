@@ -789,6 +789,7 @@ export class CheckoutService {
         id: orderId,
         checkout_id: checkout.id,
         permalink_url: `http://localhost:8080/orders/${orderId}`,
+        buyer: checkout.buyer,
         line_items: orderLineItems,
         totals: checkout.totals,
         fulfillment: {

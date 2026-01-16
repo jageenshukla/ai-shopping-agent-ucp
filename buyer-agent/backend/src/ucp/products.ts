@@ -71,7 +71,8 @@ export class UCPProductsClient {
     const results = products.filter(
       (p) =>
         p.name.toLowerCase().includes(lowerQuery) ||
-        p.description.toLowerCase().includes(lowerQuery)
+        p.description.toLowerCase().includes(lowerQuery) ||
+        p.sku.toLowerCase().includes(lowerQuery)
     );
 
     console.log(`[UCP SDK] Found ${results.length} matching products`);
