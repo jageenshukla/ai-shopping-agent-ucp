@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seller Admin Dashboard - UCP</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #667eea;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+      color: #718096;
+      font-size: 14px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      color: #2d3748;
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #4a5568;
+    }
+
+    .tab-button:hover {
+      background: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-button.active {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-content {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f7fafc;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px;
+      color: #4a5568;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    td {
+      padding: 16px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      color: #2d3748;
+    }
+
+    tr:hover {
+      background: #f7fafc;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-completed {
+      background: #c6f6d5;
+      color: #22543d;
+    }
+
+    .badge-pending {
+      background: #feebc8;
+      color: #7c2d12;
+    }
+
+    .badge-incomplete {
+      background: #e2e8f0;
+      color: #4a5568;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #718096;
+    }
+
+    .refresh-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #718096;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .price {
+      font-weight: 600;
+      color: #48bb78;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Seller Admin Dashboard</h1>
+      <p class="subtitle">UCP-Enabled Seller Platform</p>
+    </header>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-value" id="totalOrders">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Checkouts</div>
+        <div class="stat-value" id="totalCheckouts">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Products</div>
+        <div class="stat-value" id="totalProducts">-</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-button active" onclick="showTab('orders')">Orders</button>
+      <button class="tab-button" onclick="showTab('checkouts')">Checkouts</button>
+      <button class="tab-button" onclick="showTab('inventory')">Inventory</button>
+    </div>
+
+    <div id="orders-tab" class="tab-content active">
+      <button class="refresh-btn" onclick="loadOrders()">Refresh Orders</button>
+      <div id="orders-content" class="loading">Loading orders...</div>
+    </div>
+
+    <div id="checkouts-tab" class="tab-content">
+      <button class="refresh-btn" onclick="loadCheckouts()">Refresh Checkouts</button>
+      <div id="checkouts-content" class="loading">Loading checkouts...</div>
+    </div>
+
+    <div id="inventory-tab" class="tab-content">
+      <button class="refresh-btn" onclick="loadInventory()">Refresh Inventory</button>
+      <div id="inventory-content" class="loading">Loading inventory...</div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    function getStatusBadge(status) {
+      const statusLower = status.toLowerCase();
+      if (statusLower.includes('complete') || statusLower.includes('delivered')) {
+        return `<span class="badge badge-completed">${status}</span>`;
+      } else if (statusLower.includes('pending') || statusLower.includes('progress')) {
+        return `<span class="badge badge-pending">${status}</span>`;
+      } else {
+        return `<span class="badge badge-incomplete">${status}</span>`;
+      }
+    }
+
+    function formatPrice(cents) {
+      return `$${(cents / 100).toFixed(2)}`;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      return date.toLocaleString();
+    }
+
+    async function loadOrders() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/orders`);
+        const data = await response.json();
+
+        document.getElementById('totalOrders').textContent = data.count || 0;
+
+        const content = document.getElementById('orders-content');
+
+        if (!data.orders || data.orders.length === 0) {
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📦</div>
+              <p>No orders yet</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Buyer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        data.orders.forEach(order => {
+          const buyerEmail = order.buyer?.email || 'N/A';
+          const buyerName = order.buyer?.name || '';
+          const itemsCount = order.line_items?.length || 0;
+          const totalObj = order.totals?.find(t => t.type === 'total');
+          const total = totalObj?.amount || 0;
+          const status = order.status || 'unknown';
+
+          html += `
+            <tr>
+              <td><strong>${order.id.substring(0, 8)}...</strong></td>
+              <td>
+                ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
+                <small>${buyerEmail}</small>
+              </td>
+              <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
+              <td class="price">${formatPrice(total)}</td>
+              <td>${getStatusBadge(status)}</td>
+              <td><small>${formatDate(order.created_at)}</small></td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        content.innerHTML = html;
+      } catch (error) {
+        document.getElementById('orders-content').innerHTML =
+          `<div class="empty-state">Error loading orders: ${error.message}</div>`;
+      }
+    }
+
+    async function loadCheckouts() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/checkouts`);
+        const data = await response.json();
+
+        document.getElementById('totalCheckouts').textContent = data.count || 0;
+
+        const content = document.getElementById('checkouts-content');
+
+        if (!data.checkouts || data.checkouts.length === 0) {
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🛒</div>
+              <p>No checkout sessions yet</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Session ID</th>
+                <th>Buyer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        data.checkouts.forEach(checkout => {
+          const buyerEmail = checkout.buyer?.email || 'N/A';
+          const buyerName = checkout.buyer?.name || '';
+          const itemsCount = checkout.line_items?.length || 0;
+          const totalObj = checkout.totals?.find(t => t.type === 'total');
+          const total = totalObj?.amount || 0;
+          const status = checkout.status || 'unknown';
+
+          html += `
+            <tr>
+              <td><strong>${checkout.id.substring(0, 8)}...</strong></td>
+              <td>
+                ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
+                <small>${buyerEmail}</small>
+              </td>
+              <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
+              <td class="price">${formatPrice(total)}</td>
+              <td>${getStatusBadge(status)}</td>
+              <td><small>${formatDate(checkout.created_at)}</small></td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        content.innerHTML = html;
+      } catch (error) {
+        document.getElementById('checkouts-content').innerHTML =
+          `<div class="empty-state">Error loading checkouts: ${error.message}</div>`;
+      }
+    }
+
+    async function loadInventory() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/inventory`);
+        const data = await response.json();
+
+        document.getElementById('totalProducts').textContent = data.count || 0;
+
+        const content = document.getElementById('inventory-content');
+
+        if (!data.inventory || data.inventory.length === 0) {
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>No inventory data</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Product ID</th>
+                <th>Product Name</th>
+                <th>Price</th>
+                <th>Stock Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        data.inventory.forEach(item => {
+          const stockClass = item.quantity <= 0 ? 'style="color: #e53e3e;"' :
+                            item.quantity < 10 ? 'style="color: #dd6b20;"' : '';
+
+          html += `
+            <tr>
+              <td><strong>${item.product_id}</strong></td>
+              <td>${item.product_title}</td>
+              <td class="price">${formatPrice(item.product_price)}</td>
+              <td ${stockClass}><strong>${item.quantity}</strong></td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table>';
+        content.innerHTML = html;
+      } catch (error) {
+        document.getElementById('inventory-content').innerHTML =
+          `<div class="empty-state">Error loading inventory: ${error.message}</div>`;
+      }
+    }
+
+    window.onload = () => {
+      loadOrders();
+      loadCheckouts();
+      loadInventory();
+    };
+  </script>
+</body>
+</html>

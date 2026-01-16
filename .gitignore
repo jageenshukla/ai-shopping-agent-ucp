@@ -2,9 +2,10 @@
 # UCP POC - Git Ignore Configuration
 # ===================================
 
-# Blog Content (not part of POC code)
+# Blog Content & Internal Docs (not for git)
 # ===================================
 blog/
+docs/
 *.md~
 *.bak
 

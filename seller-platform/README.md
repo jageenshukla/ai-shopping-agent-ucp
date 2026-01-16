@@ -1,218 +1,123 @@
-# UCP Seller Platform
+<!--
+   Copyright 2026 UCP Authors
 
-A UCP-compliant REST API for e-commerce merchants to sell products using the Universal Commerce Protocol.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-## Features
+       http://www.apache.org/licenses/LICENSE-2.0
 
-- **UCP Discovery**: `/.well-known/ucp` endpoint for protocol discovery
-- **Product Catalog**: List and retrieve products via REST API
-- **Checkout Sessions**: Create, update, and complete checkout sessions
-- **AP2 Authorization**: Basic AP2 mandate validation with replay protection
-- **Stripe Integration**: Payment processing with Stripe (test mode)
-- **In-Memory Storage**: Zero-dependency data storage (resets on restart - perfect for POC)
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+# UCP Node.js Server Reference Implementation
+
+This directory contains a reference implementation of a Universal Commerce
+Protocol (UCP) server built with Node.js, Hono and Zod. It demonstrates how to
+implement the UCP specifications for shopping, checkout, and order management.
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- Stripe account (optional - uses mock payment if not configured)
+*   Node.js (v20 or higher recommended)
+*   npm (Node Package Manager)
 
 ## Setup
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+1.  **Clone this repo**
 
-2. **Configure environment** (optional):
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your Stripe test keys (optional)
-   ```
+    ```shell
+    git clone https://github.com/Universal-Commerce-Protocol/samples.git
+    cd samples/rest/nodejs
+    ```
 
-3. **Start development server**:
-   ```bash
-   npm run dev
-   ```
+2.  **Install Dependencies**
 
-The server will start at `http://localhost:3000` with 5 sample products pre-loaded in memory.
+    Run the following command in this directory to install the required Node.js
+    packages:
 
-## API Endpoints
+    ```bash
+    npm install
+    ```
 
-### UCP Discovery
-```bash
-GET /.well-known/ucp
-```
+3.  **Database Setup**
 
-Returns UCP profile with capabilities and endpoints.
+    The server uses **SQLite for persistence** (matching the official UCP samples
+    pattern). Ensure the `databases` directory exists. The server will
+    automatically initialize the database files (`products.db` and
+    `transactions.db`) and tables on the first run.
 
-### Products
-```bash
-# List all products
-GET /api/v1/products
+    If the `databases` directory does not exist, create it:
 
-# Get product by SKU
-GET /api/v1/products/:sku
-```
+    ```bash
+    mkdir -p databases
+    ```
 
-### Checkout Sessions
+    **Storage Architecture:**
+    - `products.db`: Product catalog (id, title, price, image_url)
+    - `transactions.db`: Checkouts, orders, inventory, idempotency keys, request
+      logs
 
-#### Create Session
-```bash
-POST /api/v1/checkout-sessions
-Content-Type: application/json
+    **Note:** For the server to function fully (e.g., to create a checkout), you
+    may need to populate `products.db` with sample product data, as the server
+    expects products to exist for validation.
 
-{
-  "items": [
-    { "sku": "COFFEE-001", "quantity": 1 }
-  ]
-}
-```
+## Running the Server
 
-#### Get Session
-```bash
-GET /api/v1/checkout-sessions/:id
-```
-
-#### Update Session
-```bash
-PUT /api/v1/checkout-sessions/:id
-Content-Type: application/json
-
-{
-  "buyer_info": {
-    "email": "user@example.com",
-    "name": "John Doe"
-  },
-  "shipping_address": {
-    "line1": "123 Main St",
-    "city": "San Francisco",
-    "state": "CA",
-    "postal_code": "94102",
-    "country": "US"
-  }
-}
-```
-
-#### Complete Checkout
-```bash
-POST /api/v1/checkout-sessions/:id/complete
-Content-Type: application/json
-
-{
-  "ap2_mandate": {
-    "version": "1.0",
-    "type": "cart_mandate",
-    "merchant_id": "demo-merchant-001",
-    "session_id": "SESSION_ID",
-    "amount": 97.19,
-    "currency": "USD",
-    "timestamp": "2026-01-15T12:00:00Z",
-    "nonce": "unique_random_string_32_chars",
-    "signature": "mock_signature"
-  },
-  "payment_credential": {
-    "type": "card",
-    "last4": "4242"
-  }
-}
-```
-
-#### Cancel Session
-```bash
-POST /api/v1/checkout-sessions/:id/cancel
-```
-
-## Testing
-
-Run the end-to-end test script:
+To start the server in development mode (with hot reloading):
 
 ```bash
-npm test
-# or
-./tests/e2e-test.sh
+npm run dev
 ```
 
-This will test all endpoints and verify the complete checkout flow.
+To build and start the server for production:
 
-## Development Scripts
-
-- `npm run dev` - Start development server with auto-reload (data auto-seeded)
-- `npm run build` - Build TypeScript to JavaScript
-- `npm start` - Run production build
-- `npm test` - Run E2E tests
-
-## Sample Products
-
-In-memory storage is pre-loaded with 5 sample products on server startup:
-
-1. **COFFEE-001** - Premium Coffee Maker ($89.99)
-2. **MUG-001** - Ceramic Coffee Mug Set ($34.99)
-3. **BEANS-001** - Organic Coffee Beans ($24.99)
-4. **GRINDER-001** - Burr Coffee Grinder ($149.99)
-5. **KETTLE-001** - Gooseneck Electric Kettle ($79.99)
-
-**Note**: Data resets on server restart - perfect for testing and demos!
-
-## Architecture
-
-```
-seller-platform/
-├── src/
-│   ├── routes/
-│   │   ├── discovery.ts    # UCP discovery endpoint
-│   │   ├── checkout.ts     # Checkout session endpoints
-│   │   └── products.ts     # Product endpoints
-│   ├── services/
-│   │   ├── ap2.ts          # AP2 mandate validation
-│   │   └── stripe.ts       # Stripe payment integration
-│   ├── db/
-│   │   ├── store.ts        # In-memory data store
-│   │   └── seed.ts         # Sample data seeding
-│   ├── types/
-│   │   └── index.ts        # TypeScript interfaces
-│   └── server.ts           # Express app entry point
-└── tests/
-    └── e2e-test.sh         # End-to-end test script
+```bash
+npm run build
+npm start
 ```
 
-## UCP Compliance
+The server will start on port **3000** by default. You can access the discovery
+endpoint at:
 
-This implementation follows the Universal Commerce Protocol specification:
+```
+http://localhost:3000/.well-known/ucp
+```
 
-- ✅ UCP discovery endpoint
-- ✅ Checkout session lifecycle (create → update → complete)
-- ✅ AP2 Cart Mandate support (with mock signatures)
-- ✅ Nonce-based replay protection
-- ✅ Timestamp validation
-- ✅ Payment handler configuration (Stripe)
+## Running Conformance Tests
 
-## Security Notes
+To verify that this server implementation complies with the UCP specifications,
+use the official UCP Conformance Test Suite.
 
-This is a POC implementation with simplified security:
+1.  **Get the Conformance Tests**
 
-- AP2 signatures are accepted without cryptographic verification (mock mode)
-- Stripe integration uses test mode
-- No rate limiting or advanced fraud protection
-- Suitable for development and testing only
+    Clone the conformance repository:
 
-## Next Steps
+    ```bash
+    git clone https://github.com/Universal-Commerce-Protocol/conformance.git
+    cd conformance
+    ```
 
-For production use, consider adding:
+2.  **Run the Tests**
 
-- Full AP2 signature verification with public key crypto
-- Rate limiting and DDoS protection
-- Advanced fraud detection
-- Webhook support for order status updates
-- Admin dashboard for order management
-- Real-time inventory management
-- Multiple payment method support
+    Follow the instructions in the conformance repository to install its
+    dependencies. Then, run the tests against this local server implementation.
 
-## License
+    Assuming the conformance suite uses a configuration file or environment
+    variables to target the server, ensure it is pointing to:
 
-This is a proof-of-concept implementation for demonstration purposes.
+    ```
+    http://localhost:3000
+    ```
 
-## Resources
+## Project Structure
 
-- [UCP Specification](https://ucp.dev)
-- [AP2 Protocol](https://ap2-protocol.org)
-- [Stripe API Documentation](https://stripe.com/docs/api)
+*   `src/api`: Contains the implementation of UCP services (Discovery, Checkout,
+    Order).
+*   `src/data`: Database access layer (SQLite).
+*   `src/models`: TypeScript types and Zod schemas (some generated from specs).
+*   `src/utils`: Helper utilities for validation and logging.
+*   `databases`: Directory where SQLite database files are stored.
