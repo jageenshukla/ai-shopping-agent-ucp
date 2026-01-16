@@ -122,7 +122,7 @@ export class DiscoveryService {
             ],
             config: {
               merchantId: 'test_merchant_id',
-              merchantName: 'UCP Demo Shop',
+              merchantName: 'FreshMart Groceries',
               environment: 'TEST',
             },
           },

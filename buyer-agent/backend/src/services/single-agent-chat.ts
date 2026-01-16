@@ -27,22 +27,38 @@ interface ChatSession {
   discoveredProducts?: Product[];
 }
 
-const SYSTEM_PROMPT = `You are a helpful UCP (Universal Commerce Protocol) shopping agent with access to e-commerce tools.
+const SYSTEM_PROMPT = `You are HomeMaker AI, a proactive home grocery management assistant for the household. You already know your household member (John Smith, john.smith@email.com) and their preferences.
+
+YOUR ROLE:
+- Monitor household grocery inventory and suggest items running low
+- Help order groceries from FreshMart Groceries on behalf of the household
+- Be friendly, proactive, and efficient
+
+INITIAL GREETING (when chat opens):
+"Good morning! I've checked our grocery inventory and noticed we're running low on a few items:
+- Whole Milk (only 2 left)
+- Coffee Beans (only 1 left)
+- Red Wine (only 3 bottles)
+- Bread (only 4 loaves)
+- Cheddar Cheese (only 2 packs)
+
+Would you like me to order these items from FreshMart Groceries?"
 
 WORKFLOW:
-1. When user asks to see products → use list_products
-2. When user wants to search → use search_products
-3. When user wants to buy:
-   - Ask for email and name if not provided
-   - Once you have SKU + email + name → use create_checkout
-4. After checkout, ask user to confirm
-5. When user confirms → use complete_purchase
+1. Start conversations by listing low-stock items proactively
+2. When user agrees to order → use create_checkout with pre-filled buyer info
+3. After checkout created → ask user to confirm the order
+4. When user confirms → use complete_purchase
+
+BUYER INFORMATION (pre-configured):
+- Name: John Smith
+- Email: john.smith@email.com
 
 IMPORTANT:
-- Keep responses SHORT (1-2 sentences)
-- When products are displayed as cards, DON'T repeat all details
-- Track what the user wants to buy and guide them through the flow
-- Always collect email and name before creating checkout`;
+- NEVER ask for email or name - you already have it
+- Keep responses SHORT and friendly (1-2 sentences)
+- Be proactive about suggesting replenishment
+- Track what the user wants to buy and guide them efficiently`;
 
 // UCP Tools for Qwen2.5
 const UCP_TOOLS: Tool[] = [
@@ -79,7 +95,7 @@ const UCP_TOOLS: Tool[] = [
     type: 'function',
     function: {
       name: 'create_checkout',
-      description: 'Create a checkout session. Requires product SKU, buyer email, and name.',
+      description: 'Create a checkout session for the household. Buyer info (John Smith, john.smith@email.com) is pre-configured.',
       parameters: {
         type: 'object',
         properties: {
@@ -87,16 +103,8 @@ const UCP_TOOLS: Tool[] = [
             type: 'string',
             description: 'Product SKU to purchase',
           },
-          email: {
-            type: 'string',
-            description: 'Buyer email address',
-          },
-          name: {
-            type: 'string',
-            description: 'Buyer full name',
-          },
         },
-        required: ['sku', 'email', 'name'],
+        required: ['sku'],
       },
     },
   },
@@ -142,9 +150,10 @@ export class SingleAgentChatService {
 
     this.sessions.set(ws, session);
 
+    // Send proactive greeting with low-stock items
     this.sendMessage(ws, {
       type: 'agent',
-      content: '👋 Hello! I\'m your UCP Shopping Agent. What would you like to do today?',
+      content: `Good morning! 🏠 I'm HomeMaker AI, your household grocery assistant.\n\nI've checked our inventory at FreshMart Groceries and noticed we're running low on:\n\n• Whole Milk (only 2 left)\n• Coffee Beans (only 1 left)\n• Red Wine (only 3 bottles)\n• Bread (only 4 loaves)\n• Cheddar Cheese (only 2 packs)\n\nWould you like me to order these items for you?`,
     });
 
     ws.on('message', async (data: Buffer) => {
@@ -287,7 +296,7 @@ export class SingleAgentChatService {
           return await this.toolSearchProducts(session, args.query);
 
         case 'create_checkout':
-          return await this.toolCreateCheckout(session, args.sku, args.email, args.name);
+          return await this.toolCreateCheckout(session, args.sku);
 
         case 'complete_purchase':
           return await this.toolCompletePurchase(session);
@@ -302,7 +311,7 @@ export class SingleAgentChatService {
 
   private async toolListProducts(session: ChatSession): Promise<any> {
     if (!session.productsClient) {
-      const profile = await discoverMerchant(session.merchantUrl);
+      await discoverMerchant(session.merchantUrl);
       // Use merchant URL as ID since UCP spec doesn't define merchant.id
       session.merchantId = session.merchantUrl;
       session.productsClient = new UCPProductsClient(session.merchantUrl);
@@ -326,7 +335,7 @@ export class SingleAgentChatService {
 
   private async toolSearchProducts(session: ChatSession, query: string): Promise<any> {
     if (!session.productsClient) {
-      const profile = await discoverMerchant(session.merchantUrl);
+      await discoverMerchant(session.merchantUrl);
       // Use merchant URL as ID since UCP spec doesn't define merchant.id
       session.merchantId = session.merchantUrl;
       session.productsClient = new UCPProductsClient(session.merchantUrl);
@@ -351,19 +360,21 @@ export class SingleAgentChatService {
 
   private async toolCreateCheckout(
     session: ChatSession,
-    sku: string,
-    email: string,
-    name: string
+    sku: string
   ): Promise<any> {
     if (!session.checkoutClient) {
-      const profile = await discoverMerchant(session.merchantUrl);
+      await discoverMerchant(session.merchantUrl);
       // Use merchant URL as ID since UCP spec doesn't define merchant.id
       session.merchantId = session.merchantUrl;
       session.productsClient = new UCPProductsClient(session.merchantUrl);
       session.checkoutClient = new UCPCheckoutClient(session.merchantUrl);
     }
 
-    session.buyerInfo = { email, name };
+    // Use pre-configured household buyer info
+    session.buyerInfo = {
+      email: 'john.smith@email.com',
+      name: 'John Smith'
+    };
     session.selectedProducts = [{ sku, quantity: 1 }];
 
     const checkoutSession = await session.checkoutClient!.createSession(session.selectedProducts);
