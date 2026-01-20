@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Seller Admin Dashboard - UCP</title>
+  <title>FreshMart Admin Dashboard</title>
   <style>
     * {
       margin: 0;
@@ -11,252 +11,616 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --secondary: #14b8a6;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --bg-gradient: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      --card-hover: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-gradient);
       min-height: 100vh;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    header {
-      background: white;
-      border-radius: 12px;
       padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      color: #1f2937;
     }
 
-    h1 {
-      color: #667eea;
-      font-size: 28px;
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header */
+    .dashboard-header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-content h1 {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin-bottom: 8px;
     }
 
-    .subtitle {
-      color: #718096;
-      font-size: 14px;
+    .header-subtitle {
+      color: #6b7280;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ecfdf5;
+      color: var(--success);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Stats Grid */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
       margin-bottom: 24px;
     }
 
     .stat-card {
-      background: white;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--card-shadow);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--primary), var(--secondary));
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--card-hover);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
       border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(20, 184, 166, 0.1));
     }
 
     .stat-label {
-      color: #718096;
+      color: #6b7280;
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      margin-bottom: 8px;
     }
 
     .stat-value {
-      color: #2d3748;
-      font-size: 32px;
-      font-weight: bold;
-      margin-top: 8px;
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
     }
 
-    .tabs {
+    .stat-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .stat-change.positive {
+      color: var(--success);
+    }
+
+    .stat-change.negative {
+      color: var(--danger);
+    }
+
+    /* Tabs */
+    .tabs-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      overflow: hidden;
+    }
+
+    .tabs-header {
       display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
+      gap: 4px;
+      padding: 16px;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
     }
 
     .tab-button {
-      background: rgba(255, 255, 255, 0.9);
-      border: none;
-      border-radius: 8px;
+      flex: 1;
       padding: 12px 24px;
-      font-size: 14px;
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
-      color: #4a5568;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .tab-button:hover {
-      background: white;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--primary);
     }
 
     .tab-button.active {
       background: white;
-      color: #667eea;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .tab-content {
       display: none;
-      background: white;
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 0;
+      animation: fadeIn 0.4s ease-out;
+      width: 100%;
     }
 
     .tab-content.active {
       display: block;
+      width: 100%;
+    }
+
+
+    /* Table */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      width: 100%;
     }
 
     table {
       width: 100%;
+      min-width: 100%;
       border-collapse: collapse;
+      table-layout: auto;
     }
 
     thead {
-      background: #f7fafc;
+      background: #f9fafb;
+      border-bottom: 2px solid #e5e7eb;
     }
 
     th {
       text-align: left;
-      padding: 12px;
-      color: #4a5568;
-      font-weight: 600;
+      padding: 16px 12px;
+      color: #374151;
+      font-weight: 700;
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
     }
 
     td {
       padding: 16px 12px;
-      border-bottom: 1px solid #e2e8f0;
-      color: #2d3748;
+      border-bottom: 1px solid #f3f4f6;
+      color: #1f2937;
+      font-size: 14px;
+      vertical-align: middle;
     }
 
     tr:hover {
-      background: #f7fafc;
+      background: #f9fafb;
     }
 
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Badges */
     .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .badge-completed {
-      background: #c6f6d5;
-      color: #22543d;
+      background: #d1fae5;
+      color: #047857;
+    }
+
+    .badge-processing {
+      background: #dbeafe;
+      color: #1e40af;
     }
 
     .badge-pending {
-      background: #feebc8;
-      color: #7c2d12;
+      background: #fef3c7;
+      color: #92400e;
     }
 
     .badge-incomplete {
-      background: #e2e8f0;
-      color: #4a5568;
+      background: #f3f4f6;
+      color: #4b5563;
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #718096;
+    .badge-canceled {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
-    .refresh-btn {
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 16px;
-      transition: all 0.2s;
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
     }
 
-    .refresh-btn:hover {
-      background: #5568d3;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
+    /* Empty State */
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      color: #718096;
     }
 
     .empty-state-icon {
-      font-size: 48px;
+      font-size: 64px;
       margin-bottom: 16px;
       opacity: 0.5;
     }
 
+    .empty-state-text {
+      color: #6b7280;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .empty-state-subtext {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+
+    /* Loading */
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f4f6;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 16px;
+    }
+
+    .loading-text {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    /* Price */
     .price {
-      font-weight: 600;
-      color: #48bb78;
+      font-weight: 700;
+      color: #059669;
+      font-size: 15px;
+    }
+
+    /* Stock Status */
+    .stock-high { color: var(--success); font-weight: 700; }
+    .stock-medium { color: var(--warning); font-weight: 700; }
+    .stock-low { color: var(--danger); font-weight: 700; }
+
+    /* Tooltips */
+    [data-tooltip] {
+      position: relative;
+      cursor: help;
+    }
+
+    [data-tooltip]:hover::before {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      background: #1f2937;
+      color: white;
+      font-size: 12px;
+      border-radius: 6px;
+      white-space: nowrap;
+      z-index: 1000;
+      margin-bottom: 8px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 12px;
+      }
+
+      .dashboard-header {
+        padding: 20px;
+      }
+
+      .header-content h1 {
+        font-size: 24px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs-header {
+        flex-direction: column;
+      }
+
+      .tab-button {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Seller Admin Dashboard</h1>
-      <p class="subtitle">UCP-Enabled Seller Platform</p>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="header-content">
+        <h1>🏪 FreshMart Admin Dashboard</h1>
+        <div class="header-subtitle">
+          <span>Universal Commerce Protocol (UCP) Seller Platform</span>
+          <span class="status-indicator">
+            <span class="status-dot"></span>
+            Live
+          </span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="refreshAll()">
+          🔄 Refresh All
+        </button>
+        <button class="btn btn-primary" onclick="exportData()">
+          📊 Export Data
+        </button>
+      </div>
     </header>
 
+    <!-- Stats Grid -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Total Orders</div>
-        <div class="stat-value" id="totalOrders">-</div>
+        <div class="stat-header">
+          <div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value" id="totalRevenue">$0.00</div>
+            <div class="stat-change positive" id="revenueChange">
+              ↗ +0% from last period
+            </div>
+          </div>
+          <div class="stat-icon">💰</div>
+        </div>
       </div>
+
       <div class="stat-card">
-        <div class="stat-label">Total Checkouts</div>
-        <div class="stat-value" id="totalCheckouts">-</div>
+        <div class="stat-header">
+          <div>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="totalOrders">-</div>
+            <div class="stat-change positive" id="ordersChange">
+              ↗ +0% this week
+            </div>
+          </div>
+          <div class="stat-icon">📦</div>
+        </div>
       </div>
+
       <div class="stat-card">
-        <div class="stat-label">Products</div>
-        <div class="stat-value" id="totalProducts">-</div>
+        <div class="stat-header">
+          <div>
+            <div class="stat-label">Active Checkouts</div>
+            <div class="stat-value" id="totalCheckouts">-</div>
+            <div class="stat-change" id="checkoutsChange">
+              → 0 pending completion
+            </div>
+          </div>
+          <div class="stat-icon">🛒</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div>
+            <div class="stat-label">Products</div>
+            <div class="stat-value" id="totalProducts">-</div>
+            <div class="stat-change" id="productsChange">
+              → 0 low stock items
+            </div>
+          </div>
+          <div class="stat-icon">📊</div>
+        </div>
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-button active" onclick="showTab('orders')">Orders</button>
-      <button class="tab-button" onclick="showTab('checkouts')">Checkouts</button>
-      <button class="tab-button" onclick="showTab('inventory')">Inventory</button>
-    </div>
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <div class="tabs-header">
+        <button class="tab-button active" onclick="showTab('orders')">
+          📦 Orders
+        </button>
+        <button class="tab-button" onclick="showTab('checkouts')">
+          🛒 Checkouts
+        </button>
+        <button class="tab-button" onclick="showTab('inventory')">
+          📊 Inventory
+        </button>
+      </div>
 
-    <div id="orders-tab" class="tab-content active">
-      <button class="refresh-btn" onclick="loadOrders()">Refresh Orders</button>
-      <div id="orders-content" class="loading">Loading orders...</div>
-    </div>
+      <!-- Orders Tab -->
+      <div id="orders-tab" class="tab-content active">
+        <div id="orders-content" class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading orders...</div>
+        </div>
+      </div>
 
-    <div id="checkouts-tab" class="tab-content">
-      <button class="refresh-btn" onclick="loadCheckouts()">Refresh Checkouts</button>
-      <div id="checkouts-content" class="loading">Loading checkouts...</div>
-    </div>
+      <!-- Checkouts Tab -->
+      <div id="checkouts-tab" class="tab-content">
+        <div id="checkouts-content" class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading checkouts...</div>
+        </div>
+      </div>
 
-    <div id="inventory-tab" class="tab-content">
-      <button class="refresh-btn" onclick="loadInventory()">Refresh Inventory</button>
-      <div id="inventory-content" class="loading">Loading inventory...</div>
+      <!-- Inventory Tab -->
+      <div id="inventory-tab" class="tab-content">
+        <div id="inventory-content" class="loading-container">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">Loading inventory...</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const API_BASE = 'http://localhost:3000';
+    let ordersData = [];
+    let checkoutsData = [];
+    let inventoryData = [];
 
+    // Tab Management
     function showTab(tabName) {
       document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -265,17 +629,26 @@
       document.getElementById(`${tabName}-tab`).classList.add('active');
     }
 
+    // Status Badge
     function getStatusBadge(status) {
       const statusLower = status.toLowerCase();
-      if (statusLower.includes('complete') || statusLower.includes('delivered')) {
-        return `<span class="badge badge-completed">${status}</span>`;
-      } else if (statusLower.includes('pending') || statusLower.includes('progress')) {
-        return `<span class="badge badge-pending">${status}</span>`;
-      } else {
-        return `<span class="badge badge-incomplete">${status}</span>`;
+      const badges = {
+        completed: 'badge-completed',
+        processing: 'badge-processing',
+        pending: 'badge-pending',
+        incomplete: 'badge-incomplete',
+        canceled: 'badge-canceled'
+      };
+
+      for (const [key, className] of Object.entries(badges)) {
+        if (statusLower.includes(key)) {
+          return `<span class="badge ${className}">${status}</span>`;
+        }
       }
+      return `<span class="badge badge-incomplete">${status}</span>`;
     }
 
+    // Formatting
     function formatPrice(cents) {
       return `$${(cents / 100).toFixed(2)}`;
     }
@@ -283,29 +656,60 @@
     function formatDate(dateStr) {
       if (!dateStr) return 'N/A';
       const date = new Date(dateStr);
-      return date.toLocaleString();
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
 
+    // Load Orders
     async function loadOrders() {
       try {
         const response = await fetch(`${API_BASE}/admin/orders`);
         const data = await response.json();
 
+        ordersData = data.orders || [];
         document.getElementById('totalOrders').textContent = data.count || 0;
+
+        // Calculate revenue
+        let totalRevenue = 0;
+        ordersData.forEach(order => {
+          const totalObj = order.totals?.find(t => t.type === 'total');
+          totalRevenue += (totalObj?.amount || 0);
+        });
+        document.getElementById('totalRevenue').textContent = formatPrice(totalRevenue);
 
         const content = document.getElementById('orders-content');
 
-        if (!data.orders || data.orders.length === 0) {
+        if (ordersData.length === 0) {
           content.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">📦</div>
-              <p>No orders yet</p>
+              <div class="empty-state-text">No orders yet</div>
+              <div class="empty-state-subtext">Orders will appear here once customers complete purchases</div>
             </div>
           `;
           return;
         }
 
-        let html = `
+        renderOrdersTable(ordersData);
+      } catch (error) {
+        document.getElementById('orders-content').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-text">Error loading orders</div>
+            <div class="empty-state-subtext">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    function renderOrdersTable(orders) {
+      let html = `
+        <div class="table-container">
           <table>
             <thead>
               <tr>
@@ -318,59 +722,74 @@
               </tr>
             </thead>
             <tbody>
+      `;
+
+      orders.forEach(order => {
+        const buyerEmail = order.buyer?.email || 'N/A';
+        const buyerName = order.buyer?.name || '';
+        const itemsCount = order.line_items?.length || 0;
+        const totalObj = order.totals?.find(t => t.type === 'total');
+        const total = totalObj?.amount || 0;
+        const status = order.status || 'unknown';
+
+        html += `
+          <tr>
+            <td>
+              <strong>${order.id.substring(0, 12)}...</strong>
+            </td>
+            <td>
+              ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
+              <small style="color: #6b7280;">${buyerEmail}</small>
+            </td>
+            <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
+            <td class="price">${formatPrice(total)}</td>
+            <td>${getStatusBadge(status)}</td>
+            <td><small>${formatDate(order.created_at)}</small></td>
+          </tr>
         `;
+      });
 
-        data.orders.forEach(order => {
-          const buyerEmail = order.buyer?.email || 'N/A';
-          const buyerName = order.buyer?.name || '';
-          const itemsCount = order.line_items?.length || 0;
-          const totalObj = order.totals?.find(t => t.type === 'total');
-          const total = totalObj?.amount || 0;
-          const status = order.status || 'unknown';
-
-          html += `
-            <tr>
-              <td><strong>${order.id.substring(0, 8)}...</strong></td>
-              <td>
-                ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
-                <small>${buyerEmail}</small>
-              </td>
-              <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
-              <td class="price">${formatPrice(total)}</td>
-              <td>${getStatusBadge(status)}</td>
-              <td><small>${formatDate(order.created_at)}</small></td>
-            </tr>
-          `;
-        });
-
-        html += '</tbody></table>';
-        content.innerHTML = html;
-      } catch (error) {
-        document.getElementById('orders-content').innerHTML =
-          `<div class="empty-state">Error loading orders: ${error.message}</div>`;
-      }
+      html += '</tbody></table></div>';
+      document.getElementById('orders-content').innerHTML = html;
     }
 
+    // Load Checkouts
     async function loadCheckouts() {
       try {
         const response = await fetch(`${API_BASE}/admin/checkouts`);
         const data = await response.json();
 
+        checkoutsData = data.checkouts || [];
         document.getElementById('totalCheckouts').textContent = data.count || 0;
 
         const content = document.getElementById('checkouts-content');
 
-        if (!data.checkouts || data.checkouts.length === 0) {
+        if (checkoutsData.length === 0) {
           content.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">🛒</div>
-              <p>No checkout sessions yet</p>
+              <div class="empty-state-text">No checkout sessions</div>
+              <div class="empty-state-subtext">Active shopping sessions will appear here</div>
             </div>
           `;
           return;
         }
 
-        let html = `
+        renderCheckoutsTable(checkoutsData);
+      } catch (error) {
+        document.getElementById('checkouts-content').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-text">Error loading checkouts</div>
+            <div class="empty-state-subtext">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    function renderCheckoutsTable(checkouts) {
+      let html = `
+        <div class="table-container">
           <table>
             <thead>
               <tr>
@@ -383,59 +802,78 @@
               </tr>
             </thead>
             <tbody>
+      `;
+
+      checkouts.forEach(checkout => {
+        const buyerEmail = checkout.buyer?.email || 'N/A';
+        const buyerName = checkout.buyer?.name || '';
+        const itemsCount = checkout.line_items?.length || 0;
+        const totalObj = checkout.totals?.find(t => t.type === 'total');
+        const total = totalObj?.amount || 0;
+        const status = checkout.status || 'unknown';
+
+        html += `
+          <tr>
+            <td>
+              <strong>${checkout.id.substring(0, 12)}...</strong>
+            </td>
+            <td>
+              ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
+              <small style="color: #6b7280;">${buyerEmail}</small>
+            </td>
+            <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
+            <td class="price">${formatPrice(total)}</td>
+            <td>${getStatusBadge(status)}</td>
+            <td><small>${formatDate(checkout.created_at)}</small></td>
+          </tr>
         `;
+      });
 
-        data.checkouts.forEach(checkout => {
-          const buyerEmail = checkout.buyer?.email || 'N/A';
-          const buyerName = checkout.buyer?.name || '';
-          const itemsCount = checkout.line_items?.length || 0;
-          const totalObj = checkout.totals?.find(t => t.type === 'total');
-          const total = totalObj?.amount || 0;
-          const status = checkout.status || 'unknown';
-
-          html += `
-            <tr>
-              <td><strong>${checkout.id.substring(0, 8)}...</strong></td>
-              <td>
-                ${buyerName ? `<strong>${buyerName}</strong><br>` : ''}
-                <small>${buyerEmail}</small>
-              </td>
-              <td>${itemsCount} item${itemsCount !== 1 ? 's' : ''}</td>
-              <td class="price">${formatPrice(total)}</td>
-              <td>${getStatusBadge(status)}</td>
-              <td><small>${formatDate(checkout.created_at)}</small></td>
-            </tr>
-          `;
-        });
-
-        html += '</tbody></table>';
-        content.innerHTML = html;
-      } catch (error) {
-        document.getElementById('checkouts-content').innerHTML =
-          `<div class="empty-state">Error loading checkouts: ${error.message}</div>`;
-      }
+      html += '</tbody></table></div>';
+      document.getElementById('checkouts-content').innerHTML = html;
     }
 
+    // Load Inventory
     async function loadInventory() {
       try {
         const response = await fetch(`${API_BASE}/admin/inventory`);
         const data = await response.json();
 
+        inventoryData = data.inventory || [];
         document.getElementById('totalProducts').textContent = data.count || 0;
+
+        // Count low stock items
+        const lowStockCount = inventoryData.filter(item => item.quantity < 10).length;
+        document.getElementById('productsChange').textContent = `→ ${lowStockCount} low stock items`;
 
         const content = document.getElementById('inventory-content');
 
-        if (!data.inventory || data.inventory.length === 0) {
+        if (inventoryData.length === 0) {
           content.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">📊</div>
-              <p>No inventory data</p>
+              <div class="empty-state-text">No inventory data</div>
+              <div class="empty-state-subtext">Product inventory will appear here</div>
             </div>
           `;
           return;
         }
 
-        let html = `
+        renderInventoryTable(inventoryData);
+      } catch (error) {
+        document.getElementById('inventory-content').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div class="empty-state-text">Error loading inventory</div>
+            <div class="empty-state-subtext">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+
+    function renderInventoryTable(inventory) {
+      let html = `
+        <div class="table-container">
           <table>
             <thead>
               <tr>
@@ -443,37 +881,72 @@
                 <th>Product Name</th>
                 <th>Price</th>
                 <th>Stock Quantity</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
+      `;
+
+      inventory.forEach(item => {
+        let stockClass = 'stock-high';
+        let stockStatus = 'In Stock';
+
+        if (item.quantity <= 0) {
+          stockClass = 'stock-low';
+          stockStatus = 'Out of Stock';
+        } else if (item.quantity < 10) {
+          stockClass = 'stock-medium';
+          stockStatus = 'Low Stock';
+        }
+
+        html += `
+          <tr>
+            <td><strong>${item.product_id}</strong></td>
+            <td>${item.product_title}</td>
+            <td class="price">${formatPrice(item.product_price)}</td>
+            <td class="${stockClass}"><strong>${item.quantity}</strong></td>
+            <td><span class="badge ${item.quantity > 10 ? 'badge-completed' : item.quantity > 0 ? 'badge-pending' : 'badge-canceled'}">${stockStatus}</span></td>
+          </tr>
         `;
+      });
 
-        data.inventory.forEach(item => {
-          const stockClass = item.quantity <= 0 ? 'style="color: #e53e3e;"' :
-                            item.quantity < 10 ? 'style="color: #dd6b20;"' : '';
-
-          html += `
-            <tr>
-              <td><strong>${item.product_id}</strong></td>
-              <td>${item.product_title}</td>
-              <td class="price">${formatPrice(item.product_price)}</td>
-              <td ${stockClass}><strong>${item.quantity}</strong></td>
-            </tr>
-          `;
-        });
-
-        html += '</tbody></table>';
-        content.innerHTML = html;
-      } catch (error) {
-        document.getElementById('inventory-content').innerHTML =
-          `<div class="empty-state">Error loading inventory: ${error.message}</div>`;
-      }
+      html += '</tbody></table></div>';
+      document.getElementById('inventory-content').innerHTML = html;
     }
 
+    // Refresh All
+    function refreshAll() {
+      loadOrders();
+      loadCheckouts();
+      loadInventory();
+    }
+
+    // Export Data
+    function exportData() {
+      const data = {
+        exported_at: new Date().toISOString(),
+        orders: ordersData,
+        checkouts: checkoutsData,
+        inventory: inventoryData
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `freshmart-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
     window.onload = () => {
       loadOrders();
       loadCheckouts();
       loadInventory();
+
+      // Auto-refresh every 30 seconds
+      setInterval(refreshAll, 30000);
     };
   </script>
 </body>
